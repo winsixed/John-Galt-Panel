@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Node.js
+node_modules/
+.out/
+.next/
+
+# Build
+frontend/out/
+*.log
+
+# OS
+.DS_Store
+*.swp
