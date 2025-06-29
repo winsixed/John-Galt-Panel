@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Цвета
+bold=$(tput bold)
+normal=$(tput sgr0)
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+blue=$(tput setaf 4)
+cyan=$(tput setaf 6)
+reset=$(tput sgr0)
+
+
 log_action() {
   mkdir -p logs
   echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> logs/panel.log
@@ -23,42 +34,43 @@ while true; do
   echo "[ GIT ОПЕРАЦИИ ]"
   echo " 8. 🔁 Git Pull                       (Обновление main)"
   echo " 9. 🧪 Zero Downtime Deploy          (build → temp → swap)"
-  echo "10. 📤 Git Push                      (commit + push main)"
-  echo "32. 🔖 Создать Git Tag"
-  echo "33. ⬆️  Push всех тегов"
-  echo "34. 🧹 Удалить все теги локально и в origin"
+  echo "${cyan}10. 📤 Git Push                      (commit + push main)${reset}"
+  echo "${cyan}32. 🔖 Создать Git Tag${reset}"
+  echo "${cyan}33. ⬆️  Push всех тегов${reset}"
+  echo "${cyan}34. 🧹 Удалить все теги локально и в origin${reset}"
 
   echo "[ СЦЕНАРИИ И АРХИВАЦИЯ ]"
-  echo "11. 🚀 DEPLOY-FULL (deploy-full.sh)  (автоматизация полной сборки)"
-  echo "12. 🧯 ROLLBACK (rollback.sh)         (откат из последнего бэкапа)"
-  echo "18. 🗂 Архивировать проект            (tar . → backups/)"
-  echo "29. 🧹 Очистка логов"
+  echo "${cyan}11. 🚀 DEPLOY-FULL (deploy-full.sh)  (автоматизация полной сборки)${reset}"
+  echo "${cyan}12. 🧯 ROLLBACK (rollback.sh)         (откат из последнего бэкапа)${reset}"
+echo "${cyan}30. 🚀 DEPLOY + PATCH               (git pull → patch.diff → build)${reset}"
+  echo "${cyan}18. 🗂 Архивировать проект            (tar . → backups/)${reset}"
+  echo "${cyan}29. 🧹 Очистка логов${reset}"
 
   echo "[ BACKEND / API / БАЗА ]"
-  echo "13. 🐍 Перезапустить backend         (systemctl restart web_panel)"
-  echo "14. 📊 Статус backend и nginx"
-  echo "15. 📄 Последние ошибки Gunicorn"
-  echo "17. 🌐 Проверка API /api/inventory/"
-  echo "36. 📤 Дамп PostgreSQL (pg_dump)"
-  echo "37. 📥 Восстановление дампа PostgreSQL"
+  echo "${cyan}13. 🐍 Перезапустить backend         (systemctl restart web_panel)${reset}"
+  echo "${cyan}14. 📊 Статус backend и nginx${reset}"
+  echo "${cyan}15. 📄 Последние ошибки Gunicorn${reset}"
+  echo "${cyan}17. 🌐 Проверка API /api/inventory/${reset}"
+  echo "${cyan}36. 📤 Дамп PostgreSQL (pg_dump)${reset}"
+  echo "${cyan}37. 📥 Восстановление дампа PostgreSQL${reset}"
 
   echo "[ MONITORИНГ И СТАТИСТИКА ]"
-  echo "16. 🚀 Pull + Build + Reload"
-  echo "21. 💾 Диск и память (df, free)"
-  echo "22. 📜 Просмотр лога панели"
-  echo "23. ⚙️  Редактировать nginx config"
-  echo "24. ✅ Проверка публичного сайта"
-  echo "28. 🔍 Проверка портов (8000/nginx)"
-  echo "31. 📊 Glances: загрузка, память и т.д."
+  echo "${cyan}16. 🚀 Pull + Build + Reload${reset}"
+  echo "${cyan}21. 💾 Диск и память (df, free)${reset}"
+  echo "${cyan}22. 📜 Просмотр лога панели${reset}"
+  echo "${cyan}23. ⚙️  Редактировать nginx config${reset}"
+  echo "${cyan}24. ✅ Проверка публичного сайта${reset}"
+  echo "${cyan}28. 🔍 Проверка портов (8000/nginx)${reset}"
+  echo "${cyan}31. 📊 Glances: загрузка, память и т.д.${reset}"
 
   echo "[ ТЕСТЫ / ИНТЕГРАЦИИ ]"
-  echo "25. 🔐 Проверка .env переменных"
-  echo "26. 🧪 Тесты фронта (npm test)"
-  echo "27. 🧪 Тесты бэка (pytest)"
-  echo "35. 📅 Настроить cron-бэкап"
-  echo "38. 🛠 Telegram Token из .env"
-  echo "39. 📬 Лог уведомлений Telegram"
-  echo "40. 🚀 GitHub Actions trigger"
+  echo "${cyan}25. 🔐 Проверка .env переменных${reset}"
+  echo "${cyan}26. 🧪 Тесты фронта (npm test)${reset}"
+  echo "${cyan}27. 🧪 Тесты бэка (pytest)${reset}"
+  echo "${cyan}35. 📅 Настроить cron-бэкап${reset}"
+  echo "${cyan}38. 🛠 Telegram Token из .env${reset}"
+  echo "${cyan}39. 📬 Лог уведомлений Telegram${reset}"
+  echo "${cyan}40. 🚀 GitHub Actions trigger${reset}"
 
   echo "=================================="
   read -p "Выберите действие: " choice
@@ -98,6 +110,21 @@ while true; do
     27) pytest || echo "❌ pytest not found or failed"; read -p "Enter..." ;;
     28) ss -tulnp | grep -E ":8000|:80"; read -p "Enter..." ;;
     29) rm -f logs/*.log; echo "✅ Логи очищены"; read -p "Enter..." ;;
+
+    30)
+      echo "🚀 DEPLOY + PATCH"
+      git pull origin main || { echo "❌ Git pull не удался"; read -p "Enter..."; continue; }
+
+      if [ -f patch.diff ]; then
+        git apply patch.diff && echo "✅ Патч применён"
+      else
+        echo "⚠️  patch.diff не найден"
+      fi
+
+      npm install && npm run build && cp -r public/* out/
+      sudo systemctl reload nginx
+      echo "✅ Деплой и патч завершены"
+      read -p "Enter..." ;;
   esac
   log_action "Выполнен пункт $choice"
 done
