@@ -120,7 +120,7 @@ export default function SignUpForm() {
                     type="email"
                     id="email"
                     name="email"
-                    placeholder="Enter your email"
+                    placeholder="Введите email"
                   />
                 </div>
                 {/* <!-- Password --> */}
