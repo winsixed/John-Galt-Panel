@@ -14,8 +14,10 @@ export default function RequireRole({
   const router = useRouter();
 
   useEffect(() => {
-    if (user && !roles.includes(user.role)) {
-      router.replace("/");
+    if (!user) {
+      router.replace("/login");
+    } else if (!roles.includes(user.role)) {
+      router.replace("/unauthorized");
     }
   }, [user, roles, router]);
 
