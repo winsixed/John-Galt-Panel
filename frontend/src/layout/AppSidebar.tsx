@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -22,19 +22,22 @@ const AppSidebar: React.FC = () => {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const navItems: NavItem[] = [
-    { icon: <GridIcon />, name: "Главная", path: "/" },
-    { icon: <GridIcon />, name: "Профиль", path: "/profile" },
-    ...(user && (user.role === "admin" || user.role === "staff")
-      ? [
-          { icon: <GridIcon />, name: "Настройки", path: "/settings" },
-          { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
-        ]
-      : []),
-    ...(user?.role === "admin"
-      ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
-      : []),
-  ];
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { icon: <GridIcon />, name: "Главная", path: "/" },
+      { icon: <GridIcon />, name: "Профиль", path: "/profile" },
+      ...(user && (user.role === "admin" || user.role === "staff")
+        ? [
+            { icon: <GridIcon />, name: "Настройки", path: "/settings" },
+            { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
+          ]
+        : []),
+      ...(user?.role === "admin"
+        ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
+        : []),
+    ],
+    [user]
+  );
 
   const renderMenuItems = (
     navItems: NavItem[],
