@@ -14,7 +14,8 @@ npm run build || { echo "❌ Ошибка сборки"; exit 1; }
 
 echo "🚀 Перезапуск SSR через pm2..."
 pm2 delete john-galt-frontend || true
-pm2 start .next/standalone/server.js --name john-galt-frontend
+# Start the built Next.js app using `next start` instead of standalone server.js
+pm2 start npm --name john-galt-frontend -- start
 
 cd ..
 
