@@ -15,6 +15,30 @@ log_action() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> logs/panel.log
 }
 
+case "$1" in
+  frontend:build)
+    echo "🔧 Сборка фронтенда (SSR)..."
+    cd frontend
+
+    echo "▶️ Применение patch.diff..."
+    git pull origin main
+    if [ -f patch.diff ]; then
+      git apply patch.diff && echo "✅ Патч применён"
+    else
+      echo "⚠️  patch.diff не найден"
+    fi
+
+    npm install
+    npm run build
+
+    echo "🧹 Перезапуск SSR-сервера через pm2..."
+    pm2 delete john-galt-frontend || true
+    pm2 start .next/standalone/server.js --name john-galt-frontend
+
+    exit 0
+    ;;
+esac
+
 while true; do
   clear
   echo "============================================"
