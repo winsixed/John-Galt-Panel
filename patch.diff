@@ -1,140 +1,595 @@
-diff --git a/frontend/build-frontend.sh b/frontend/build-frontend.sh
-old mode 100644
-new mode 100755
-index ff0c9eae26a4c3acb99165174c85768f8787cd0f..5ee368bda8c30ab919c3d9bcd5f9886b411ab414
---- a/frontend/build-frontend.sh
-+++ b/frontend/build-frontend.sh
-@@ -1,17 +1,9 @@
- #!/bin/bash
+diff --git a/backend/fastapi_app/dependencies.py b/backend/fastapi_app/dependencies.py
+index d74b6fec8cb1b1dc29a156a359d37ba3363158f2..ed5ab4da818dcaebe295171e69b003da0a9e85ff 100644
+--- a/backend/fastapi_app/dependencies.py
++++ b/backend/fastapi_app/dependencies.py
+@@ -1,36 +1,48 @@
+ from fastapi import Depends, HTTPException, status
+ from jose import JWTError, jwt
+ from sqlalchemy.orm import Session
+ from fastapi.security import OAuth2PasswordBearer
+ from .database import SessionLocal
+ from .auth import SECRET_KEY, ALGORITHM
+ from . import models
++from .models import UserRole
  
--echo "📦 [1/4] Установка зависимостей..."
--npm install
-+echo "🔧 Сборка фронтенда (SSR)..."
-+cd "$(dirname "$0")"
+ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
  
--echo "⚙️  [2/4] Сборка проекта..."
-+npm install
- npm run build
  
--echo "🧹 [3/4] Очистка старых статичных данных..."
--rm -rf out/images out/*.jpg out/*.png out/*.svg out/*.ico
--
--echo "📂 [4/4] Копирование public/ в out/..."
--cp -r public/* out/
--
--echo "✅ Готово! Static frontend собран и ресурсы скопированы."
--
--	
-+echo "🚀 SSR-билд завершён. Сервер: .next/standalone/server.js"
-diff --git a/frontend/next.config.ts b/frontend/next.config.ts
-index 96d258e301b41b3701fcc63d7afb63b60c0f8ec6..b28f0c01f9664c6c2fd22dcb25de1afa8b3b4c53 100644
---- a/frontend/next.config.ts
-+++ b/frontend/next.config.ts
-@@ -1,23 +1,29 @@
- import type { NextConfig } from "next";
+ def get_db():
+     db = SessionLocal()
+     try:
+         yield db
+     finally:
+         db.close()
  
- const nextConfig: NextConfig = {
--  output: "export",
--  async headers() {
--    return [{
--      source: "/:path*",
--      headers: [{ key: "Content-Security-Policy", value: "default-src 'self'" }]
--    }];
--  },
-+  output: "standalone",
-+  reactStrictMode: true,
-+  headers: async () => [
-+    {
-+      source: "/(.*)",
-+      headers: [
-+        {
-+          key: "Content-Security-Policy",
-+          value: "default-src 'self'",
-+        },
-+      ],
-+    },
-+  ],
-   images: {
-     unoptimized: true,
-   },
-   webpack(config) {
-     config.module.rules.push({
-       test: /\.svg$/,
-       use: ["@svgr/webpack"],
-     });
-     return config;
-   },
+ 
+ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+     credentials_exception = HTTPException(
+         status_code=status.HTTP_401_UNAUTHORIZED,
+         detail="Could not validate credentials",
+         headers={"WWW-Authenticate": "Bearer"},
+     )
+     try:
+         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+-        user_id: int = payload.get("sub")
+-        if user_id is None:
++        user_id: int | None = payload.get("sub")
++        role = payload.get("role")
++        if user_id is None or role is None:
+             raise credentials_exception
+     except JWTError:
+         raise credentials_exception
+-    user = db.query(models.User).filter(models.User.id == user_id).first()
++    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+     if user is None:
+         raise credentials_exception
++    user.role = UserRole(role)
+     return user
++
++
++def requires_role(*allowed_roles: UserRole):
++    def wrapper(user: models.User = Depends(get_current_user)):
++        if user.role not in allowed_roles:
++            raise HTTPException(status_code=403, detail="Недостаточно прав")
++        return user
++
++    return Depends(wrapper)
+diff --git a/backend/fastapi_app/models.py b/backend/fastapi_app/models.py
+index 5616f6b7812771e4b3251b4d7a2342c43f553646..5d37de969f4c7ea662d55e277cabdd1122cf2f15 100644
+--- a/backend/fastapi_app/models.py
++++ b/backend/fastapi_app/models.py
+@@ -1,10 +1,17 @@
+-from sqlalchemy import Column, Integer, String
++import enum
++from sqlalchemy import Column, Integer, String, Enum
+ from .database import Base
+ 
++
++class UserRole(str, enum.Enum):
++    admin = "admin"
++    staff = "staff"
++    viewer = "viewer"
++
+ class User(Base):
+     __tablename__ = 'users'
+ 
+     id = Column(Integer, primary_key=True, index=True)
+     email = Column(String, unique=True, index=True, nullable=False)
+     hashed_password = Column(String, nullable=False)
+-    role = Column(String, default='employee')
++    role = Column(Enum(UserRole), default=UserRole.staff, nullable=False)
+diff --git a/backend/fastapi_app/routers/users.py b/backend/fastapi_app/routers/users.py
+index f0972a40eae8e22eb03fef238d80eea92d733a4c..f2f40f1ca2009897952b1ebfed31583ee26c669e 100644
+--- a/backend/fastapi_app/routers/users.py
++++ b/backend/fastapi_app/routers/users.py
+@@ -1,10 +1,16 @@
+ from fastapi import APIRouter, Depends
+ from sqlalchemy.orm import Session
+-from ..dependencies import get_current_user, get_db
++from ..dependencies import get_current_user, get_db, requires_role
+ from .. import models, schemas
++from ..models import UserRole
+ 
+ router = APIRouter(prefix="/users", tags=["users"])
+ 
+ @router.get("/", response_model=list[schemas.UserPublic])
+-def list_users(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
++def list_users(db: Session = Depends(get_db), current_user: models.User = requires_role(UserRole.admin)):
+     return db.query(models.User).all()
++
++
++@router.get("/admin-only")
++def admin_info(current_user: models.User = requires_role(UserRole.admin)):
++    return {"message": "secret"}
+diff --git a/backend/fastapi_app/schemas.py b/backend/fastapi_app/schemas.py
+index 630b87dee6198ab288db34b7879ba587d5cdbad1..04e7ba67a6a6708018b632c28ddf6481058c7575 100644
+--- a/backend/fastapi_app/schemas.py
++++ b/backend/fastapi_app/schemas.py
+@@ -1,19 +1,20 @@
+ from pydantic import BaseModel, EmailStr
+ from typing import Optional
++from .models import UserRole
+ 
+ class UserBase(BaseModel):
+     email: EmailStr
+ 
+ class UserCreate(UserBase):
+     password: str
+-    role: Optional[str] = 'employee'
++    role: Optional[UserRole] = UserRole.staff
+ 
+ class UserLogin(UserBase):
+     password: str
+ 
+ class UserPublic(UserBase):
+     id: int
+-    role: str
++    role: UserRole
+ 
+     class Config:
+         orm_mode = True
+diff --git a/backend/tests/test_auth.py b/backend/tests/test_auth.py
+index 2c724baba15bb3de42cbc624af9c6bcd10e5b2ab..03ee0ab68733514a8389e087b9a108c66227898b 100644
+--- a/backend/tests/test_auth.py
++++ b/backend/tests/test_auth.py
+@@ -1,15 +1,16 @@
+ from fastapi import status
+ from fastapi.testclient import TestClient
+ from fastapi_app.main import app
+ 
+ client = TestClient(app)
+ 
+ def test_register_and_login():
+     response = client.post('/auth/register', json={'email': 'user@example.com', 'password': 'secret', 'role': 'admin'})
+     assert response.status_code == status.HTTP_201_CREATED
+     token_res = client.post('/auth/login', data={'username': 'user@example.com', 'password': 'secret'})
+     assert token_res.status_code == status.HTTP_200_OK
+     token = token_res.json()['access_token']
+     me = client.get('/auth/me', headers={'Authorization': f'Bearer {token}'})
+     assert me.status_code == status.HTTP_200_OK
+     assert me.json()['email'] == 'user@example.com'
++    assert me.json()['role'] == 'admin'
+diff --git a/frontend/src/app/admin/page.tsx b/frontend/src/app/admin/page.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..85a9dbd446dc79c49202e0660d456897db18b61d
+--- /dev/null
++++ b/frontend/src/app/admin/page.tsx
+@@ -0,0 +1,9 @@
++import RequireRole from "@/components/auth/RequireRole";
++
++export default function AdminPage() {
++  return (
++    <RequireRole roles={["admin"]}>
++      <div className="p-6">Админ страница</div>
++    </RequireRole>
++  );
++}
+diff --git a/frontend/src/app/inventory/page.tsx b/frontend/src/app/inventory/page.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..1bd5a8cd09c8c4a259ce9c5d3c1fde678dc553dc
+--- /dev/null
++++ b/frontend/src/app/inventory/page.tsx
+@@ -0,0 +1,9 @@
++import RequireRole from "@/components/auth/RequireRole";
++
++export default function InventoryPage() {
++  return (
++    <RequireRole roles={["admin", "staff"]}>
++      <div className="p-6">Инвентарь</div>
++    </RequireRole>
++  );
++}
+diff --git a/frontend/src/app/layout.tsx b/frontend/src/app/layout.tsx
+index aac7fa6565f191bc8514eec23ba558c6fb910d51..49c853288f778741edd0af4466d732bd7f6bbe61 100644
+--- a/frontend/src/app/layout.tsx
++++ b/frontend/src/app/layout.tsx
+@@ -1,25 +1,28 @@
+ import { Inter } from 'next/font/google';
+ import './globals.css';
+ 
+ import { SidebarProvider } from '@/context/SidebarContext';
+ import { ThemeProvider } from '@/context/ThemeContext';
++import { AuthProvider } from '@/context/AuthContext';
+ 
+ const inter = Inter({
+   subsets: ["latin", "cyrillic"],
+ });
+ 
+ export default function RootLayout({
+   children,
+ }: Readonly<{
+   children: React.ReactNode;
+ }>) {
+   return (
+     <html lang="ru">
+       <body className={`${inter.className} dark:bg-gray-900`}>
+         <ThemeProvider>
+-          <SidebarProvider>{children}</SidebarProvider>
++          <AuthProvider>
++            <SidebarProvider>{children}</SidebarProvider>
++          </AuthProvider>
+         </ThemeProvider>
+       </body>
+     </html>
+   );
+ }
+diff --git a/frontend/src/app/profile/page.tsx b/frontend/src/app/profile/page.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ec78556a01a23b35542d6fde2f969e86c8fa61e
+--- /dev/null
++++ b/frontend/src/app/profile/page.tsx
+@@ -0,0 +1,9 @@
++import RequireRole from "@/components/auth/RequireRole";
++
++export default function Profile() {
++  return (
++    <RequireRole roles={["admin", "staff", "viewer"]}>
++      <div className="p-6">Профиль пользователя</div>
++    </RequireRole>
++  );
++}
+diff --git a/frontend/src/app/settings/page.tsx b/frontend/src/app/settings/page.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..052d9aa3cb81d47b9b7d876de0b4171de1c358bf
+--- /dev/null
++++ b/frontend/src/app/settings/page.tsx
+@@ -0,0 +1,9 @@
++import RequireRole from "@/components/auth/RequireRole";
++
++export default function SettingsPage() {
++  return (
++    <RequireRole roles={["admin", "staff"]}>
++      <div className="p-6">Настройки</div>
++    </RequireRole>
++  );
++}
+diff --git a/frontend/src/components/auth/RequireRole.tsx b/frontend/src/components/auth/RequireRole.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..2a2e8a5141cffa5738ab698595692e7e2b630fc5
+--- /dev/null
++++ b/frontend/src/components/auth/RequireRole.tsx
+@@ -0,0 +1,24 @@
++"use client";
++import { useRouter } from "next/navigation";
++import { useEffect } from "react";
++import { useAuth } from "@/context/AuthContext";
++
++export default function RequireRole({
++  children,
++  roles,
++}: {
++  children: React.ReactNode;
++  roles: string[];
++}) {
++  const { user } = useAuth();
++  const router = useRouter();
++
++  useEffect(() => {
++    if (user && !roles.includes(user.role)) {
++      router.replace("/");
++    }
++  }, [user, roles, router]);
++
++  if (!user || !roles.includes(user.role)) return null;
++  return <>{children}</>;
++}
+diff --git a/frontend/src/components/auth/SignInForm.tsx b/frontend/src/components/auth/SignInForm.tsx
+index 4f203d55db5c5e773fa15fc28dfe679eae9c1aea..75c6c8d001954874142413f97997018e2feae15b 100644
+--- a/frontend/src/components/auth/SignInForm.tsx
++++ b/frontend/src/components/auth/SignInForm.tsx
+@@ -1,37 +1,59 @@
+ "use client";
+ import Checkbox from "@/components/form/input/Checkbox";
+ import Input from "@/components/form/input/InputField";
+ import Label from "@/components/form/Label";
+ import Button from "@/components/ui/button/Button";
+ import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
+ import Link from "next/link";
+ import React, { useState } from "react";
++import { useAuth } from "@/context/AuthContext";
++import { useRouter } from "next/navigation";
+ 
+ export default function SignInForm() {
+   const [showPassword, setShowPassword] = useState(false);
+   const [isChecked, setIsChecked] = useState(false);
++  const [email, setEmail] = useState("");
++  const [password, setPassword] = useState("");
++  const { login } = useAuth();
++  const router = useRouter();
++
++  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
++    e.preventDefault();
++    const res = await fetch("/auth/login", {
++      method: "POST",
++      headers: {
++        "Content-Type": "application/x-www-form-urlencoded",
++      },
++      body: new URLSearchParams({ username: email, password }),
++    });
++    if (res.ok) {
++      const data = await res.json();
++      login(data.access_token);
++      router.push("/");
++    }
++  }
+   return (
+     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
+       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
+         <Link
+           href="/"
+           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+         >
+           <ChevronLeftIcon />
+           Назад к панели
+         </Link>
+       </div>
+       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+         <div>
+           <div className="mb-5 sm:mb-8">
+             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+               Вход
+             </h1>
+             <p className="text-sm text-gray-500 dark:text-gray-400">
+               Введите почту и пароль для входа
+             </p>
+           </div>
+           <div>
+             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
+               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+                 <svg
+@@ -62,93 +84,100 @@ export default function SignInForm() {
+               </button>
+               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+                 <svg
+                   width="21"
+                   className="fill-current"
+                   height="20"
+                   viewBox="0 0 21 20"
+                   fill="none"
+                   xmlns="http://www.w3.org/2000/svg"
+                 >
+                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
+                 </svg>
+                 Войти через X
+               </button>
+             </div>
+             <div className="relative py-3 sm:py-5">
+               <div className="absolute inset-0 flex items-center">
+                 <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
+               </div>
+               <div className="relative flex justify-center text-sm">
+                 <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
+                   Или
+                 </span>
+               </div>
+             </div>
+-            <form>
++            <form onSubmit={handleSubmit}>
+               <div className="space-y-6">
+                 <div>
+                   <Label>
+                     Email <span className="text-error-500">*</span>{" "}
+                   </Label>
+-                  <Input placeholder="info@gmail.com" type="email" />
++                  <Input
++                    placeholder="info@gmail.com"
++                    type="email"
++                    value={email}
++                    onChange={(e) => setEmail(e.target.value)}
++                  />
+                 </div>
+                 <div>
+                   <Label>
+                     Пароль <span className="text-error-500">*</span>{" "}
+                   </Label>
+                   <div className="relative">
+                     <Input
+                       type={showPassword ? "text" : "password"}
+                       placeholder="Enter your password"
++                      value={password}
++                      onChange={(e) => setPassword(e.target.value)}
+                     />
+                     <span
+                       onClick={() => setShowPassword(!showPassword)}
+                       className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                     >
+                       {showPassword ? (
+                         <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
+                       ) : (
+                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
+                       )}
+                     </span>
+                   </div>
+                 </div>
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-3">
+                     <Checkbox checked={isChecked} onChange={setIsChecked} />
+                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
+                       Запомнить меня
+                     </span>
+                   </div>
+                   <Link
+                     href="/reset-password"
+                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                   >
+                     Забыли пароль?
+                   </Link>
+                 </div>
+                 <div>
+-                  <Button className="w-full" size="sm">
++                  <Button type="submit" className="w-full" size="sm">
+                     Войти
+                   </Button>
+                 </div>
+               </div>
+             </form>
+ 
+             <div className="mt-5">
+               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
+                 Нет аккаунта? {""}
+                 <Link
+                   href="/signup"
+                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                 >
+                   Регистрация
+                 </Link>
+               </p>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   );
+ }
+diff --git a/frontend/src/context/AuthContext.tsx b/frontend/src/context/AuthContext.tsx
+new file mode 100644
+index 0000000000000000000000000000000000000000..7be14b98ca1f123d8f5140b381424766a9701a61
+--- /dev/null
++++ b/frontend/src/context/AuthContext.tsx
+@@ -0,0 +1,69 @@
++"use client";
++import React, { createContext, useContext, useEffect, useState } from "react";
++
++type Role = "admin" | "staff" | "viewer";
++
++export type User = {
++  id: number;
++  email: string;
++  role: Role;
++};
++
++type AuthContextType = {
++  user: User | null;
++  login: (token: string) => void;
++  logout: () => void;
++};
++
++const AuthContext = createContext<AuthContextType | undefined>(undefined);
++
++function parseJwt(token: string): any {
++  try {
++    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
++    return JSON.parse(atob(base64));
++  } catch {
++    return null;
++  }
++}
++
++export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
++  children,
++}) => {
++  const [user, setUser] = useState<User | null>(null);
++
++  const login = (token: string) => {
++    const payload = parseJwt(token);
++    if (payload) {
++      setUser({
++        id: parseInt(payload.sub),
++        email: payload.email ?? "",
++        role: payload.role as Role,
++      });
++      localStorage.setItem("token", token);
++    }
++  };
++
++  const logout = () => {
++    setUser(null);
++    localStorage.removeItem("token");
++  };
++
++  useEffect(() => {
++    const stored = localStorage.getItem("token");
++    if (stored) {
++      login(stored);
++    }
++  }, []);
++
++  return (
++    <AuthContext.Provider value={{ user, login, logout }}>
++      {children}
++    </AuthContext.Provider>
++  );
++};
++
++export const useAuth = () => {
++  const ctx = useContext(AuthContext);
++  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
++  return ctx;
++};
+diff --git a/frontend/src/layout/AppSidebar.tsx b/frontend/src/layout/AppSidebar.tsx
+index 5834e0e916b9a5f5cef3f40b85a7e452d94e8a03..dac751144588b340b6d51310b6d4a2a3e96818fe 100644
+--- a/frontend/src/layout/AppSidebar.tsx
++++ b/frontend/src/layout/AppSidebar.tsx
+@@ -1,55 +1,63 @@
+ "use client";
+ import React, { useEffect, useRef, useState, useCallback } from "react";
+ import Link from "next/link";
+ import Image from "next/image";
+ import { usePathname } from "next/navigation";
+ import { useSidebar } from "../context/SidebarContext";
+ import { ChevronDownIcon, GridIcon, HorizontaLDots } from "../icons/index";
++import { useAuth } from "@/context/AuthContext";
+ 
+ 
+ type NavItem = {
+   name: string;
+   icon: React.ReactNode;
+   path?: string;
+   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
  };
  
- export default nextConfig;
-diff --git a/panel.sh b/panel.sh
-index b9b5230f40c62df6240daf5115c204df20955353..2a1a769c6406c12d49f4c8591d1163b41dad41bf 100755
---- a/panel.sh
-+++ b/panel.sh
-@@ -1,42 +1,66 @@
- #!/bin/bash
+-const navItems: NavItem[] = [
+-  {
+-    icon: <GridIcon />,
+-    name: "Главная",
+-    path: "/",
+-  },
+-];
+-
+ const othersItems: NavItem[] = [];
  
- # Цвета
- bold=$(tput bold)
- normal=$(tput sgr0)
- red=$(tput setaf 1)
- green=$(tput setaf 2)
- yellow=$(tput setaf 3)
- blue=$(tput setaf 4)
- cyan=$(tput setaf 6)
- reset=$(tput sgr0)
+ const AppSidebar: React.FC = () => {
+   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
++  const { user } = useAuth();
+   const pathname = usePathname();
  
- log_action() {
-   mkdir -p logs
-   echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> logs/panel.log
- }
- 
-+case "$1" in
-+  frontend:build)
-+    echo "🔧 Сборка фронтенда (SSR)..."
-+    cd frontend
++  const navItems: NavItem[] = [
++    { icon: <GridIcon />, name: "Главная", path: "/" },
++    { icon: <GridIcon />, name: "Профиль", path: "/profile" },
++    ...(user && (user.role === "admin" || user.role === "staff")
++      ? [
++          { icon: <GridIcon />, name: "Настройки", path: "/settings" },
++          { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
++        ]
++      : []),
++    ...(user?.role === "admin"
++      ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
++      : []),
++  ];
 +
-+    echo "▶️ Применение patch.diff..."
-+    git pull origin main
-+    if [ -f patch.diff ]; then
-+      git apply patch.diff && echo "✅ Патч применён"
-+    else
-+      echo "⚠️  patch.diff не найден"
-+    fi
-+
-+    npm install
-+    npm run build
-+
-+    echo "🧹 Перезапуск SSR-сервера через pm2..."
-+    pm2 delete john-galt-frontend || true
-+    pm2 start .next/standalone/server.js --name john-galt-frontend
-+
-+    exit 0
-+    ;;
-+esac
-+
- while true; do
-   clear
-   echo "============================================"
-   echo "   🚀 ${bold}DevOps Панель управления проектом${normal}"
-   echo "============================================"
- 
-   echo "${bold}[1-10] ОСНОВНОЕ УПРАВЛЕНИЕ${normal}"
-   echo " 1. ❌ Выйти"
-   echo " 2. 📦 Установить зависимости       (npm install)"
-   echo " 3. ⚙️  Сборка фронтенда            (npm run build)"
-   echo " 4. 🧹 Копировать public/ в out/    (очистка и копирование ресурсов)"
-   echo " 5. 🔄 Перезапуск nginx             (systemctl reload nginx)"
-   echo " 6. 🚀 Полный деплой                (2 → 3 → 4 → 5)"
-   echo " 7. 🧯 Откат из резервной копии     (out_backup/* → out/)"
-   echo " 8. 🔁 Git Pull                     (обновить main)"
-   echo " 9. 🧪 Zero Downtime Deploy         (временная out → swap)"
-   echo "10. 📤 Git Push                     (commit + push)"
- 
-   echo "${bold}[11-20] GIT И СЦЕНАРИИ${normal}"
-   echo "11. 🚀 DEPLOY-FULL                  (запуск deploy-full.sh)"
-   echo "12. 🧯 ROLLBACK                     (откат rollback.sh)"
-   echo "13. 📄 Применить patch.diff         (если файл существует)"
-   echo "14. 🔖 Создать Git Tag              (ручной ввод)"
-   echo "15. ⬆️  Отправить все теги          (git push --tags)"
-   echo "16. 🧹 Удалить все локальные теги   (и с origin)"
+   const renderMenuItems = (
+     navItems: NavItem[],
+     menuType: "main" | "others"
+   ) => (
+     <ul className="flex flex-col gap-4">
+       {navItems.map((nav, index) => (
+         <li key={nav.name}>
+           {nav.subItems ? (
+             <button
+               onClick={() => handleSubmenuToggle(index, menuType)}
+               className={`menu-item group  ${
+                 openSubmenu?.type === menuType && openSubmenu?.index === index
+                   ? "menu-item-active"
+                   : "menu-item-inactive"
+               } cursor-pointer ${
+                 !isExpanded && !isHovered
+                   ? "lg:justify-center"
+                   : "lg:justify-start"
+               }`}
+             >
+               <span
+                 className={` ${
+                   openSubmenu?.type === menuType && openSubmenu?.index === index
+                     ? "menu-item-icon-active"
+                     : "menu-item-icon-inactive"
+	

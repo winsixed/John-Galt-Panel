@@ -13,3 +13,4 @@ def test_register_and_login():
     me = client.get('/auth/me', headers={'Authorization': f'Bearer {token}'})
     assert me.status_code == status.HTTP_200_OK
     assert me.json()['email'] == 'user@example.com'
+    assert me.json()['role'] == 'admin'

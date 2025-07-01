@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { ChevronDownIcon, GridIcon, HorizontaLDots } from "../icons/index";
+import { useAuth } from "@/context/AuthContext";
 
 
 type NavItem = {
@@ -14,19 +15,26 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Главная",
-    path: "/",
-  },
-];
-
 const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { user } = useAuth();
   const pathname = usePathname();
+
+  const navItems: NavItem[] = [
+    { icon: <GridIcon />, name: "Главная", path: "/" },
+    { icon: <GridIcon />, name: "Профиль", path: "/profile" },
+    ...(user && (user.role === "admin" || user.role === "staff")
+      ? [
+          { icon: <GridIcon />, name: "Настройки", path: "/settings" },
+          { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
+        ]
+      : []),
+    ...(user?.role === "admin"
+      ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
+      : []),
+  ];
 
   const renderMenuItems = (
     navItems: NavItem[],
