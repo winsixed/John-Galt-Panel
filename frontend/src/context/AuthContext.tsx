@@ -9,18 +9,25 @@ export type User = {
   role: Role;
 };
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   login: (token: string) => void;
   logout: () => void;
-};
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-function parseJwt(token: string): any {
+interface TokenPayload {
+  sub: string;
+  email?: string;
+  role: Role;
+}
+
+function parseJwt(token: string): TokenPayload | null {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64));
+    return JSON.parse(atob(base64)) as TokenPayload;
   } catch {
     return null;
   }
@@ -56,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
