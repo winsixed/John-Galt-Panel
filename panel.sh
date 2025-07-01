@@ -34,7 +34,7 @@ case "$1" in
 
     echo "🧹 Перезапуск SSR-сервера через pm2..."
     pm2 delete john-galt-frontend || true
-    pm2 start .next/standalone/server.js --name john-galt-frontend
+    pm2 start npm --name john-galt-frontend -- start
 
     exit 0
     ;;

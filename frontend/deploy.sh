@@ -12,7 +12,9 @@ npm run build
 
 echo "🚀 [3/5] Перезапуск SSR через pm2..."
 pm2 delete john-galt-frontend || true
-pm2 start .next/standalone/server.js --name john-galt-frontend
+# Next.js 15 no longer generates a standalone server.js by default.
+# Use `next start` via npm to serve the built app on port 3000.
+pm2 start npm --name john-galt-frontend -- start
 
 echo "🔄 [4/5] Перезапуск nginx..."
 sudo systemctl reload nginx
