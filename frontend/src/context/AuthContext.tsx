@@ -48,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         role: payload.role as Role,
       });
       localStorage.setItem("token", token);
+      document.cookie = `token=${token}; path=/; secure`;
     } else {
       setUser(null);
       localStorage.removeItem("token");
@@ -57,16 +58,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     setUser(null);
     localStorage.removeItem("token");
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   };
 
   useEffect(() => {
     const stored = localStorage.getItem("token");
-    if (stored) {
-      const payload = parseJwt(stored);
+    let token = stored;
+    if (!token) {
+      const match = document.cookie.match(/(?:^|; )token=([^;]*)/);
+      if (match) token = match[1];
+    }
+    if (token) {
+      const payload = parseJwt(token);
       if (payload && payload.exp * 1000 > Date.now()) {
-        login(stored);
+        login(token);
       } else {
         localStorage.removeItem("token");
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       }
     }
   }, []);
