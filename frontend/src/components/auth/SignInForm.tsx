@@ -6,6 +6,7 @@ import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import React, { useState } from "react";
+import Spinner from "@/components/ui/Spinner";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -16,20 +17,32 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const { login } = useAuth();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const res = await fetch("/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ username: email, password }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      login(data.access_token);
-      router.push("/");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ username: email, password }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        login(data.access_token);
+        router.push("/dashboard");
+      } else {
+        setError("Неверные учетные данные");
+      }
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setLoading(false);
     }
   }
   return (
@@ -156,9 +169,18 @@ export default function SignInForm() {
                     Забыли пароль?
                   </Link>
                 </div>
+                {error && (
+                  <p className="text-error-500 text-sm">{error}</p>
+                )}
                 <div>
-                  <Button type="submit" className="w-full" size="sm">
-                    Войти
+                  <Button type="submit" className="w-full" size="sm" disabled={loading}>
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Spinner /> Входим...
+                      </span>
+                    ) : (
+                      "Войти"
+                    )}
                   </Button>
                 </div>
               </div>
