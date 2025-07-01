@@ -1,13 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  async headers() {
-    return [{
-      source: "/:path*",
-      headers: [{ key: "Content-Security-Policy", value: "default-src 'self'" }]
-    }];
-  },
+  output: "standalone",
+  reactStrictMode: true,
+  headers: async () => [
+    {
+      source: "/(.*)",
+      headers: [
+        {
+          key: "Content-Security-Policy",
+          value: "default-src 'self'",
+        },
+      ],
+    },
+  ],
   images: {
     unoptimized: true,
   },
