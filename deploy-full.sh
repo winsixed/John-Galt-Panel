@@ -12,10 +12,9 @@ npm install || { echo "❌ npm install завершился с ошибкой"; 
 echo "⚙️  Сборка проекта (Next.js)..."
 npm run build || { echo "❌ Ошибка сборки"; exit 1; }
 
-echo "📂 Копирование в out/"
-mkdir -p out
-rm -rf out/images out/*.jpg out/*.png out/*.svg out/*.ico
-cp -r public/* out/
+echo "🚀 Перезапуск SSR через pm2..."
+pm2 delete john-galt-frontend || true
+pm2 start .next/standalone/server.js --name john-galt-frontend
 
 cd ..
 

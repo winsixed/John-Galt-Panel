@@ -3,17 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  headers: async () => [
-    {
-      source: "/(.*)",
-      headers: [
-        {
-          key: "Content-Security-Policy",
-          value: "default-src 'self'",
-        },
-      ],
-    },
-  ],
+  // CSP is configured via nginx. Remove header from Next.js to avoid conflict.
   images: {
     unoptimized: true,
   },

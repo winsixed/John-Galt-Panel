@@ -21,7 +21,7 @@ npm run dev
 
 ## Scripts
 - `panel.sh` – interactive DevOps panel
-- `deploy-full.sh` – build and deploy frontend
+- `deploy-full.sh` – build and deploy frontend and restart SSR
 - `rollback.sh` – restore from backup
 
 ## Useful Pages
@@ -30,3 +30,6 @@ npm run dev
 - Profile: `/profile`
 
 Environment variables are documented in `.env.example`.
+
+The `nginx/john-galt.conf` file contains an example reverse proxy
+configuration for serving the Next.js SSR frontend and FastAPI backend.
