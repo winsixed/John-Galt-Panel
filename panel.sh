@@ -24,6 +24,7 @@ case "$1" in
     git pull origin main
     if [ -f patch.diff ]; then
       git apply patch.diff && echo "✅ Патч применён"
+      rm -f patch.diff
     else
       echo "⚠️  patch.diff не найден"
     fi
@@ -110,6 +111,7 @@ while true; do
       git pull origin main
       if [ -f patch.diff ]; then
         git apply patch.diff && echo "✅ Патч применён"
+        rm -f patch.diff
       else
         echo "⚠️  patch.diff не найден"
       fi
