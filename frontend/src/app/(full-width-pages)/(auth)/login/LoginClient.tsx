@@ -10,7 +10,7 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/dashboard');
+      router.replace('/');
     }
   }, [user, router]);
 

@@ -35,7 +35,7 @@ export default function SignInForm() {
       if (res.ok) {
         const data = await res.json();
         login(data.access_token);
-        router.push("/dashboard");
+        router.push("/");
       } else {
         setError("Неверные учетные данные");
       }
