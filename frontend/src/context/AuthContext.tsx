@@ -22,6 +22,7 @@ interface TokenPayload {
   sub: string;
   email?: string;
   role: Role;
+  exp: number;
 }
 
 function parseJwt(token: string): TokenPayload | null {
@@ -40,13 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = (token: string) => {
     const payload = parseJwt(token);
-    if (payload) {
+    if (payload && payload.exp * 1000 > Date.now()) {
       setUser({
         id: parseInt(payload.sub),
         email: payload.email ?? "",
         role: payload.role as Role,
       });
       localStorage.setItem("token", token);
+    } else {
+      setUser(null);
+      localStorage.removeItem("token");
     }
   };
 
@@ -58,7 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const stored = localStorage.getItem("token");
     if (stored) {
-      login(stored);
+      const payload = parseJwt(stored);
+      if (payload && payload.exp * 1000 > Date.now()) {
+        login(stored);
+      } else {
+        localStorage.removeItem("token");
+      }
     }
   }, []);
 
