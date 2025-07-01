@@ -1,297 +1,84 @@
-diff --git a/frontend/src/components/form/input/InputField.tsx b/frontend/src/components/form/input/InputField.tsx
-index 35d6524200c012d4ce74e82a5a12f01367ceeef2..58ce63675652b70b06712f845904807dd9a5e97e 100644
---- a/frontend/src/components/form/input/InputField.tsx
-+++ b/frontend/src/components/form/input/InputField.tsx
-@@ -1,82 +1,85 @@
- import React, { FC } from "react";
- 
- interface InputProps {
-   type?: "text" | "number" | "email" | "password" | "date" | "time" | string;
-   id?: string;
-   name?: string;
-   placeholder?: string;
-   defaultValue?: string | number;
-+  value?: string | number;
-   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-   className?: string;
-   min?: string;
-   max?: string;
-   step?: number;
-   disabled?: boolean;
-   success?: boolean;
-   error?: boolean;
-   hint?: string; // Optional hint text
- }
- 
- const Input: FC<InputProps> = ({
-   type = "text",
-   id,
-   name,
-   placeholder,
-   defaultValue,
-+  value,
-   onChange,
-   className = "",
-   min,
-   max,
-   step,
-   disabled = false,
-   success = false,
-   error = false,
-   hint,
- }) => {
-   // Determine input styles based on state (disabled, success, error)
-   let inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${className}`;
- 
-   // Add styles for the different states
-   if (disabled) {
-     inputClasses += ` text-gray-500 border-gray-300 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700`;
-   } else if (error) {
-     inputClasses += ` text-error-800 border-error-500 focus:ring-3 focus:ring-error-500/10  dark:text-error-400 dark:border-error-500`;
-   } else if (success) {
-     inputClasses += ` text-success-500 border-success-400 focus:ring-success-500/10 focus:border-success-300  dark:text-success-400 dark:border-success-500`;
-   } else {
-     inputClasses += ` bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`;
-   }
- 
-   return (
-     <div className="relative">
-       <input
-         type={type}
-         id={id}
-         name={name}
-         placeholder={placeholder}
-         defaultValue={defaultValue}
-+        value={value}
-         onChange={onChange}
-         min={min}
-         max={max}
-         step={step}
-         disabled={disabled}
-         className={inputClasses}
-       />
- 
-       {/* Optional Hint Text */}
-       {hint && (
-         <p
-           className={`mt-1.5 text-xs ${
-             error
-               ? "text-error-500"
-               : success
-               ? "text-success-500"
-               : "text-gray-500"
-           }`}
-         >
-           {hint}
-         </p>
-       )}
-     </div>
-   );
- };
-diff --git a/frontend/src/components/ui/button/Button.tsx b/frontend/src/components/ui/button/Button.tsx
-index fa9c7f10a410a0fbb4df80ce08bd59be9004f3f0..e3bc687ae0386a3518849dd2f7fb1c0993676fe1 100644
---- a/frontend/src/components/ui/button/Button.tsx
-+++ b/frontend/src/components/ui/button/Button.tsx
-@@ -1,55 +1,58 @@
- import React, { ReactNode } from "react";
- 
- interface ButtonProps {
-   children: ReactNode; // Button text or content
-   size?: "sm" | "md"; // Button size
-   variant?: "primary" | "outline"; // Button variant
-   startIcon?: ReactNode; // Icon before the text
-   endIcon?: ReactNode; // Icon after the text
-   onClick?: () => void; // Click handler
-+  type?: "button" | "submit" | "reset"; // Button type
-   disabled?: boolean; // Disabled state
-   className?: string; // Disabled state
- }
- 
- const Button: React.FC<ButtonProps> = ({
-   children,
-   size = "md",
-   variant = "primary",
-   startIcon,
-   endIcon,
-   onClick,
-+  type = "button",
-   className = "",
-   disabled = false,
- }) => {
-   // Size Classes
-   const sizeClasses = {
-     sm: "px-4 py-3 text-sm",
-     md: "px-5 py-3.5 text-sm",
-   };
- 
-   // Variant Classes
-   const variantClasses = {
-     primary:
-       "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
-     outline:
-       "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300",
-   };
- 
-   return (
-     <button
-+      type={type}
-       className={`inline-flex items-center justify-center font-medium gap-2 rounded-lg transition ${className} ${
-         sizeClasses[size]
-       } ${variantClasses[variant]} ${
-         disabled ? "cursor-not-allowed opacity-50" : ""
-       }`}
-       onClick={onClick}
-       disabled={disabled}
-     >
-       {startIcon && <span className="flex items-center">{startIcon}</span>}
-       {children}
-       {endIcon && <span className="flex items-center">{endIcon}</span>}
-     </button>
-   );
- };
- 
- export default Button;
-diff --git a/frontend/src/context/AuthContext.tsx b/frontend/src/context/AuthContext.tsx
-index 7be14b98ca1f123d8f5140b381424766a9701a61..818dff699cc71636a867ab44db25f24bb5ef4f2a 100644
---- a/frontend/src/context/AuthContext.tsx
-+++ b/frontend/src/context/AuthContext.tsx
-@@ -1,69 +1,76 @@
- "use client";
- import React, { createContext, useContext, useEffect, useState } from "react";
- 
- type Role = "admin" | "staff" | "viewer";
- 
- export type User = {
-   id: number;
-   email: string;
-   role: Role;
- };
- 
--type AuthContextType = {
-+interface AuthContextType {
-   user: User | null;
-+  setUser: (user: User | null) => void;
-   login: (token: string) => void;
-   logout: () => void;
--};
-+}
-+
-+const AuthContext = createContext<AuthContextType | null>(null);
- 
--const AuthContext = createContext<AuthContextType | undefined>(undefined);
-+interface TokenPayload {
-+  sub: string;
-+  email?: string;
-+  role: Role;
-+}
- 
--function parseJwt(token: string): any {
-+function parseJwt(token: string): TokenPayload | null {
-   try {
-     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
--    return JSON.parse(atob(base64));
-+    return JSON.parse(atob(base64)) as TokenPayload;
-   } catch {
-     return null;
-   }
- }
- 
- export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-   children,
- }) => {
-   const [user, setUser] = useState<User | null>(null);
- 
-   const login = (token: string) => {
-     const payload = parseJwt(token);
-     if (payload) {
-       setUser({
-         id: parseInt(payload.sub),
-         email: payload.email ?? "",
-         role: payload.role as Role,
-       });
-       localStorage.setItem("token", token);
-     }
-   };
- 
-   const logout = () => {
-     setUser(null);
-     localStorage.removeItem("token");
-   };
- 
-   useEffect(() => {
-     const stored = localStorage.getItem("token");
-     if (stored) {
-       login(stored);
-     }
-   }, []);
- 
-   return (
--    <AuthContext.Provider value={{ user, login, logout }}>
-+    <AuthContext.Provider value={{ user, setUser, login, logout }}>
-       {children}
-     </AuthContext.Provider>
-   );
- };
- 
- export const useAuth = () => {
-   const ctx = useContext(AuthContext);
-   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-   return ctx;
- };
 diff --git a/frontend/src/layout/AppSidebar.tsx b/frontend/src/layout/AppSidebar.tsx
-index dac751144588b340b6d51310b6d4a2a3e96818fe..46da461b1f08f16c4d578beb40846a0e3f043347 100644
+index 46da461b1f08f16c4d578beb40846a0e3f043347..a7b13afcf6e1d3a5cd50917abadaca1445d231a8 100644
 --- a/frontend/src/layout/AppSidebar.tsx
 +++ b/frontend/src/layout/AppSidebar.tsx
-@@ -176,51 +176,51 @@ const AppSidebar: React.FC = () => {
+@@ -1,62 +1,65 @@
+ "use client";
+-import React, { useEffect, useRef, useState, useCallback } from "react";
++import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+ import Link from "next/link";
+ import Image from "next/image";
+ import { usePathname } from "next/navigation";
+ import { useSidebar } from "../context/SidebarContext";
+ import { ChevronDownIcon, GridIcon, HorizontaLDots } from "../icons/index";
+ import { useAuth } from "@/context/AuthContext";
  
-   useEffect(() => {
-     // Check if the current path matches any submenu item
-     let submenuMatched = false;
-     ["main", "others"].forEach((menuType) => {
-       const items = menuType === "main" ? navItems : othersItems;
-       items.forEach((nav, index) => {
-         if (nav.subItems) {
-           nav.subItems.forEach((subItem) => {
-             if (isActive(subItem.path)) {
-               setOpenSubmenu({
-                 type: menuType as "main" | "others",
-                 index,
-               });
-               submenuMatched = true;
-             }
-           });
-         }
-       });
-     });
  
-     // If no submenu item matches, close the open submenu
-     if (!submenuMatched) {
-       setOpenSubmenu(null);
-     }
--  }, [pathname,isActive]);
-+  }, [pathname, isActive, navItems]);
+ type NavItem = {
+   name: string;
+   icon: React.ReactNode;
+   path?: string;
+   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+ };
  
-   useEffect(() => {
-     // Set the height of the submenu items when the submenu is opened
-     if (openSubmenu !== null) {
-       const key = `${openSubmenu.type}-${openSubmenu.index}`;
-       if (subMenuRefs.current[key]) {
-         setSubMenuHeight((prevHeights) => ({
-           ...prevHeights,
-           [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-         }));
-       }
-     }
-   }, [openSubmenu]);
+ const othersItems: NavItem[] = [];
  
-   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-     setOpenSubmenu((prevOpenSubmenu) => {
-       if (
-         prevOpenSubmenu &&
-         prevOpenSubmenu.type === menuType &&
-         prevOpenSubmenu.index === index
-       ) {
-         return null;
-       }
-       return { type: menuType, index };
-     });
+ const AppSidebar: React.FC = () => {
+   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+   const { user } = useAuth();
+   const pathname = usePathname();
+ 
+-  const navItems: NavItem[] = [
+-    { icon: <GridIcon />, name: "Главная", path: "/" },
+-    { icon: <GridIcon />, name: "Профиль", path: "/profile" },
+-    ...(user && (user.role === "admin" || user.role === "staff")
+-      ? [
+-          { icon: <GridIcon />, name: "Настройки", path: "/settings" },
+-          { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
+-        ]
+-      : []),
+-    ...(user?.role === "admin"
+-      ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
+-      : []),
+-  ];
++  const navItems: NavItem[] = useMemo(
++    () => [
++      { icon: <GridIcon />, name: "Главная", path: "/" },
++      { icon: <GridIcon />, name: "Профиль", path: "/profile" },
++      ...(user && (user.role === "admin" || user.role === "staff")
++        ? [
++            { icon: <GridIcon />, name: "Настройки", path: "/settings" },
++            { icon: <GridIcon />, name: "Инвентарь", path: "/inventory" },
++          ]
++        : []),
++      ...(user?.role === "admin"
++        ? [{ icon: <GridIcon />, name: "Админ", path: "/admin" }]
++        : []),
++    ],
++    [user]
++  );
+ 
+   const renderMenuItems = (
+     navItems: NavItem[],
+     menuType: "main" | "others"
+   ) => (
+     <ul className="flex flex-col gap-4">
+       {navItems.map((nav, index) => (
+         <li key={nav.name}>
+           {nav.subItems ? (
+             <button
+               onClick={() => handleSubmenuToggle(index, menuType)}
+               className={`menu-item group  ${
+                 openSubmenu?.type === menuType && openSubmenu?.index === index
+                   ? "menu-item-active"
+                   : "menu-item-inactive"
+               } cursor-pointer ${
+                 !isExpanded && !isHovered
+                   ? "lg:justify-center"
+                   : "lg:justify-start"
+               }`}
+             >
+               <span
+                 className={` ${
+                   openSubmenu?.type === menuType && openSubmenu?.index === index
+                     ? "menu-item-icon-active"
