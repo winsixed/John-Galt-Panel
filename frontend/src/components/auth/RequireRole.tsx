@@ -2,13 +2,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { Role } from "@/types";
 
 export default function RequireRole({
   children,
   roles,
 }: {
   children: React.ReactNode;
-  roles: string[];
+  roles: Role[];
 }) {
   const { user } = useAuth();
   const router = useRouter();
