@@ -19,7 +19,7 @@ export default function UserTable() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/users/');
+        const res = await fetch('/api/users/');
         if (res.ok) {
           const data = await res.json();
           setUsers(data);
