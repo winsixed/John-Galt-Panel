@@ -10,13 +10,11 @@ npm install
 echo "⚙️  [2/5] Сборка проекта..."
 npm run build
 
-echo "🧹 [3/5] Очистка старых ресурсов..."
-rm -rf out/images out/*.jpg out/*.png out/*.svg out/*.ico
+echo "🚀 [3/5] Перезапуск SSR через pm2..."
+pm2 delete john-galt-frontend || true
+pm2 start .next/standalone/server.js --name john-galt-frontend
 
-echo "📂 [4/5] Копирование public/ → out/"
-cp -r public/* out/
-
-echo "🔄 [5/5] Перезапуск nginx..."
+echo "🔄 [4/5] Перезапуск nginx..."
 sudo systemctl reload nginx
 
 echo ""
