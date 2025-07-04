@@ -21,13 +21,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/create", response_model=UserPublic)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter_by(email=user.email).first()
+    existing = db.query(models.User).filter_by(username=user.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed_pw = pwd_context.hash(user.password)
     new_user = models.User(
-        email=user.email,
+        username=user.username,
         hashed_password=hashed_pw,
         role=user.role
     )
