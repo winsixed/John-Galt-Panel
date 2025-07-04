@@ -26,7 +26,9 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         <div className="flex items-center gap-3">
           <span className="overflow-hidden rounded-full h-11 w-11">
             <img
-              src={`/images/user/${user?.id || "default"}.jpg`}
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                user?.email || "User"
+              )}&background=0D8ABC&color=fff&size=128`}
               alt="User"
               className="object-cover w-full h-full"
             />
@@ -66,14 +68,16 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         onClose={closeDropdown}
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div className="flex items-center gap-3">
-          <span className="overflow-hidden rounded-full h-11 w-11">
-            <img
-              src={`/images/user/${user?.id || "default"}.jpg`}
-              alt="User"
-              className="object-cover w-full h-full"
-            />
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="overflow-hidden rounded-full h-11 w-11">
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  user?.email || "User"
+                )}&background=0D8ABC&color=fff&size=128`}
+                alt="User"
+                className="object-cover w-full h-full"
+              />
+            </span>
           <div>
             <span className="block font-medium text-theme-sm text-gray-700 dark:text-gray-400">
               {user?.email || "Гость"}
