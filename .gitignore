@@ -19,3 +19,15 @@ logs/
 .DS_Store
 *.swp
 backend/app.db
+.env
+test.db
+
+# Patch rejects
+*.rej
+
+# Certs
+*.crt
+
+# Alembic/migrations
+alembic/versions/*.pyc
+
