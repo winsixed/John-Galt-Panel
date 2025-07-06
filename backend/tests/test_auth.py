@@ -1,11 +1,12 @@
 from fastapi import status
 from fastapi.testclient import TestClient
-from fastapi_app.main import app
 
-client = TestClient(app)
 
-def test_register_and_login():
-    response = client.post('/api/auth/register', json={'username': 'testuser', 'password': 'secret', 'role': 'admin'})
+def test_register_and_login(client: TestClient):
+    response = client.post(
+        '/api/auth/register',
+        json={'username': 'testuser', 'password': 'secret', 'role': 'admin'},
+    )
     assert response.status_code == status.HTTP_201_CREATED
     token_res = client.post('/api/auth/login', data={'username': 'testuser', 'password': 'secret'})
     assert token_res.status_code == status.HTTP_200_OK
@@ -13,4 +14,24 @@ def test_register_and_login():
     me = client.get('/api/auth/me', headers={'Authorization': f'Bearer {token}'})
     assert me.status_code == status.HTTP_200_OK
     assert me.json()['username'] == 'testuser'
-    assert me.json()['role'] == 'admin'
+    assert me.json()['role'] == 'staff'
+
+
+def test_cannot_register_as_admin(client: TestClient):
+    res = client.post(
+        '/api/auth/register',
+        json={'username': 'newuser', 'password': 'pw', 'role': 'admin'},
+    )
+    assert res.status_code == status.HTTP_201_CREATED
+    assert res.json()['role'] == 'staff'
+
+
+def test_login_failures(client: TestClient):
+    # nonexistent user
+    bad = client.post('/api/auth/login', data={'username': 'none', 'password': 'pw'})
+    assert bad.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # register user
+    client.post('/api/auth/register', json={'username': 'bob', 'password': 'pw'})
+    wrong = client.post('/api/auth/login', data={'username': 'bob', 'password': 'bad'})
+    assert wrong.status_code == status.HTTP_401_UNAUTHORIZED

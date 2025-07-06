@@ -1,0 +1,17 @@
+[0;1;32m●[0m web_panel.service - Uvicorn instance to serve web_panel (FastAPI)
+     Loaded: loaded (/etc/systemd/system/web_panel.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Sun 2025-07-06 16:21:47 MSK; 2s ago
+   Main PID: 78387 (uvicorn)
+      Tasks: 1 (limit: 2275)
+     Memory: 53.8M
+        CPU: 1.017s
+     CGroup: /system.slice/web_panel.service
+             └─78387 /var/www/John_Galt_Panel/backend/venv/bin/python3 /var/www/John_Galt_Panel/backend/venv/bin/uvicorn fastapi_app.main:app --host 0.0.0.0 --port 8000
+
+Jul 06 16:21:47 5162427-winsixed systemd[1]: web_panel.service: Deactivated successfully.
+Jul 06 16:21:47 5162427-winsixed systemd[1]: Stopped Uvicorn instance to serve web_panel (FastAPI).
+Jul 06 16:21:47 5162427-winsixed systemd[1]: web_panel.service: Consumed 1.048s CPU time.
+Jul 06 16:21:47 5162427-winsixed systemd[1]: Started Uvicorn instance to serve web_panel (FastAPI).
+Jul 06 16:21:48 5162427-winsixed uvicorn[78387]: /var/www/John_Galt_Panel/backend/venv/lib/python3.10/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
+Jul 06 16:21:48 5162427-winsixed uvicorn[78387]: * 'orm_mode' has been renamed to 'from_attributes'
+Jul 06 16:21:48 5162427-winsixed uvicorn[78387]:   warnings.warn(message, UserWarning)
