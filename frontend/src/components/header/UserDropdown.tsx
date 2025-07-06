@@ -4,6 +4,7 @@ import LogoutButton from "@/components/auth/LogoutButton";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import Image from "next/image";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,10 +29,12 @@ export default function UserDropdown() {
       >
         <div className="flex items-center gap-3">
           <span className="overflow-hidden rounded-full h-11 w-11">
-            <img
+            <Image
               src={avatarUrl}
               alt="User"
-              className="object-cover w-full h-full"
+              width={44}
+              height={44}
+              className="object-cover w-full h-full rounded-full"
             />
           </span>
           <div className="hidden sm:block">
@@ -70,10 +73,12 @@ export default function UserDropdown() {
       >
         <div className="flex items-center gap-3">
           <span className="overflow-hidden rounded-full h-11 w-11">
-            <img
+            <Image
               src={avatarUrl}
               alt="User"
-              className="object-cover w-full h-full"
+              width={44}
+              height={44}
+              className="object-cover w-full h-full rounded-full"
             />
           </span>
           <div>
