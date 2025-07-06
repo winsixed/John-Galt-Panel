@@ -2,7 +2,6 @@
 import { useAuth } from "@/context/AuthContext";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { Role } from "@/types";
-import Image from "next/image";
 import React from "react";
 import { useUserDropdown } from "@/hooks/useUserDropdown";
 import { Dropdown } from "../ui/dropdown/Dropdown";
@@ -14,13 +13,6 @@ export default function UserDropdown() {
   const { user } = useAuth();
   const { isOpen, toggleDropdown, closeDropdown } = useUserDropdown();
 
-  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    user?.username ?? "User"
-  )}&background=0D8ABC&color=fff&size=128`;
-
-  const SkeletonAvatar = (
-    <span className="block h-11 w-11 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-  );
 
   return (
     <div className="relative">
@@ -30,28 +22,13 @@ export default function UserDropdown() {
         aria-expanded={isOpen}
         className="dropdown-toggle flex items-center text-gray-700 transition-colors dark:text-gray-400"
       >
-        <div className="flex items-center gap-3">
-          <span className="overflow-hidden rounded-full h-11 w-11">
-            {user ? (
-              <Image
-                src={avatarUrl}
-                alt="User avatar"
-                width={44}
-                height={44}
-                className="object-cover w-full h-full rounded-full"
-              />
-            ) : (
-              SkeletonAvatar
-            )}
-          </span>
-          <div className="hidden sm:block text-left">
+        <div className="hidden sm:block text-left">
             <span className="block font-medium text-theme-sm text-gray-700 dark:text-gray-400">
               {user?.username ?? "Гость"}
             </span>
             <span className="block text-theme-xs text-gray-500 dark:text-gray-400 capitalize">
               {user?.role ?? "no-role"}
             </span>
-          </div>
         </div>
         <svg
           className={`ml-2 stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
@@ -78,28 +55,13 @@ export default function UserDropdown() {
         onClose={closeDropdown}
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div className="flex items-center gap-3">
-          <span className="overflow-hidden rounded-full h-11 w-11">
-            {user ? (
-              <Image
-                src={avatarUrl}
-                alt="User avatar"
-                width={44}
-                height={44}
-                className="object-cover w-full h-full rounded-full"
-              />
-            ) : (
-              SkeletonAvatar
-            )}
+        <div>
+          <span className="block font-medium text-theme-sm text-gray-700 dark:text-gray-400">
+            {user?.username ?? "Гость"}
           </span>
-          <div>
-            <span className="block font-medium text-theme-sm text-gray-700 dark:text-gray-400">
-              {user?.username ?? "Гость"}
-            </span>
-            <span className="block text-theme-xs text-gray-500 dark:text-gray-400 capitalize">
-              {user?.role ?? "no-role"}
-            </span>
-          </div>
+          <span className="block text-theme-xs text-gray-500 dark:text-gray-400 capitalize">
+            {user?.role ?? "no-role"}
+          </span>
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
