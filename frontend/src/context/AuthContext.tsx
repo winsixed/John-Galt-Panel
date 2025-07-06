@@ -3,8 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Role } from "@/types";
 
 export type User = {
-  id: number;
-  email: string;
+  username: string;
   role: Role;
 };
 
@@ -18,8 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 interface TokenPayload {
-  sub: string;
-  email?: string;
+  sub: string; // username
   role: Role;
   exp: number;
 }
@@ -48,8 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const payload = parseJwt(token);
     if (payload && payload.exp * 1000 > Date.now()) {
       setUser({
-        id: parseInt(payload.sub),
-        email: payload.email ?? "",
+        username: payload.sub,
         role: payload.role as Role,
       });
       localStorage.setItem("token", token);

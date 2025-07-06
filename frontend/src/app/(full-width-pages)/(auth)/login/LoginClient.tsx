@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import Checkbox from '@/components/form/input/Checkbox';
 import Input from '@/components/form/input/InputField';
 import Label from '@/components/form/Label';
@@ -15,7 +15,7 @@ export default function LoginClient() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +36,7 @@ export default function LoginClient() {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({ username: email, password }),
+        body: new URLSearchParams({ username, password }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -60,68 +60,62 @@ export default function LoginClient() {
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
               Вход
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Введите почту и пароль для входа</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Введите логин и пароль для входа</p>
           </div>
-          <div>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
-                <div>
-                  <Label>
-                    Email <span className="text-error-500">*</span>{' '}
-                  </Label>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-6">
+              <div>
+                <Label>
+                  Логин <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>
+                  Пароль <span className="text-error-500">*</span>
+                </Label>
+                <div className="relative">
                   <Input
-                    placeholder="info@gmail.com"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
-                </div>
-                <div>
-                  <Label>
-                    Пароль <span className="text-error-500">*</span>{' '}
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Запомнить меня
-                    </span>
-                  </div>
-                </div>
-                {error && <p className="text-error-500 text-sm">{error}</p>}
-                <div>
-                  <Button type="submit" className="w-full" size="sm" disabled={loading}>
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Spinner /> Входим...
-                      </span>
+                  <span
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
                     ) : (
-                      'Войти'
+                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
                     )}
-                  </Button>
+                  </span>
                 </div>
               </div>
-            </form>
-          </div>
+              <div className="flex items-center gap-3">
+                <Checkbox checked={isChecked} onChange={setIsChecked} />
+                <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
+                  Запомнить меня
+                </span>
+              </div>
+              {error && <p className="text-error-500 text-sm">{error}</p>}
+              <div>
+                <Button type="submit" className="w-full" size="sm" disabled={loading}>
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Spinner /> Входим...
+                    </span>
+                  ) : (
+                    'Войти'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

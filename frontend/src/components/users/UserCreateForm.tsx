@@ -6,7 +6,7 @@ import Button from '@/components/ui/button/Button';
 import Spinner from '@/components/ui/Spinner';
 
 export default function UserCreateForm() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('staff');
   const [loading, setLoading] = useState(false);
@@ -20,11 +20,11 @@ export default function UserCreateForm() {
       const res = await fetch('/api/users/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ username, password, role }),
       });
       if (res.ok) {
         setMessage('Пользователь создан');
-        setEmail('');
+        setUsername('');
         setPassword('');
       } else {
         setMessage('Ошибка создания');
@@ -40,8 +40,8 @@ export default function UserCreateForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       {message && <p>{message}</p>}
       <div>
-        <Label>Email</Label>
-        <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Label>Username</Label>
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} />
       </div>
       <div>
         <Label>Пароль</Label>

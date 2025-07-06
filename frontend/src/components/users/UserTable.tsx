@@ -6,7 +6,7 @@ import Spinner from '@/components/ui/Spinner';
 
 interface User {
   id: number;
-  email: string;
+  username: string;
   role: string;
   status?: string;
 }
@@ -43,7 +43,7 @@ export default function UserTable() {
       <Table className="min-w-full">
         <TableHeader>
           <TableRow>
-            <TableCell isHeader className="px-4 py-2 text-left">Email</TableCell>
+            <TableCell isHeader className="px-4 py-2 text-left">Username</TableCell>
             <TableCell isHeader className="px-4 py-2 text-left">Role</TableCell>
             <TableCell isHeader className="px-4 py-2 text-left">Actions</TableCell>
           </TableRow>
@@ -51,7 +51,7 @@ export default function UserTable() {
         <TableBody>
           {users.map((u) => (
             <TableRow key={u.id}>
-              <TableCell className="px-4 py-2">{u.email}</TableCell>
+              <TableCell className="px-4 py-2">{u.username}</TableCell>
               <TableCell className="px-4 py-2">{u.role}</TableCell>
               <TableCell className="px-4 py-2 space-x-2">
                 <Button size="sm" variant="outline">Edit</Button>
