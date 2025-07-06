@@ -9,7 +9,9 @@ def create_admin(client: TestClient, db: Session):
     user = db.query(models.User).filter_by(username='admin').first()
     user.role = models.UserRole.admin
     db.commit()
-    token_res = client.post('/api/auth/login', data={'username': 'admin', 'password': 'pw'})
+    token_res = client.post(
+        '/api/auth/login', json={'username': 'admin', 'password': 'pw'}
+    )
     return token_res.json()['access_token']
 
 
@@ -39,7 +41,9 @@ def test_user_endpoints(client: TestClient, db_session: Session):
 def test_admin_required(client: TestClient):
     # regular user
     client.post('/api/auth/register', json={'username': 'bob', 'password': 'pw'})
-    token_res = client.post('/api/auth/login', data={'username': 'bob', 'password': 'pw'})
+    token_res = client.post(
+        '/api/auth/login', json={'username': 'bob', 'password': 'pw'}
+    )
     token = token_res.json()['access_token']
 
     res = client.post(

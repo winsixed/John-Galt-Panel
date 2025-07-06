@@ -8,7 +8,9 @@ def test_register_and_login(client: TestClient):
         json={'username': 'testuser', 'password': 'secret', 'role': 'admin'},
     )
     assert response.status_code == status.HTTP_201_CREATED
-    token_res = client.post('/api/auth/login', data={'username': 'testuser', 'password': 'secret'})
+    token_res = client.post(
+        '/api/auth/login', json={'username': 'testuser', 'password': 'secret'}
+    )
     assert token_res.status_code == status.HTTP_200_OK
     token = token_res.json()['access_token']
     me = client.get('/api/auth/me', headers={'Authorization': f'Bearer {token}'})
@@ -28,10 +30,10 @@ def test_cannot_register_as_admin(client: TestClient):
 
 def test_login_failures(client: TestClient):
     # nonexistent user
-    bad = client.post('/api/auth/login', data={'username': 'none', 'password': 'pw'})
+    bad = client.post('/api/auth/login', json={'username': 'none', 'password': 'pw'})
     assert bad.status_code == status.HTTP_401_UNAUTHORIZED
 
     # register user
     client.post('/api/auth/register', json={'username': 'bob', 'password': 'pw'})
-    wrong = client.post('/api/auth/login', data={'username': 'bob', 'password': 'bad'})
+    wrong = client.post('/api/auth/login', json={'username': 'bob', 'password': 'bad'})
     assert wrong.status_code == status.HTTP_401_UNAUTHORIZED

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm
 from ..rate_limiter import limiter
 from .. import models, schemas
 from ..auth import get_password_hash, verify_password, create_access_token
@@ -37,11 +36,11 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 @limiter.limit("5/minute")
 def login(
     request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    data: schemas.UserLogin,
     db: Session = Depends(get_db),
 ):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    user = db.query(models.User).filter(models.User.username == data.username).first()
+    if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
     token = create_access_token({"sub": user.username, "role": user.role})
     return {"access_token": token, "token_type": "bearer"}
