@@ -28,16 +28,18 @@ export default function SignInForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: new URLSearchParams({ username, password }),
+        body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
         const data = await res.json();
         login(data.access_token);
         router.push("/");
+      } else if (res.status === 401) {
+        setError("Invalid credentials");
       } else {
-        setError("Неверные учетные данные");
+        setError("Server error");
       }
     } catch {
       setError("Ошибка сети");

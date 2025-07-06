@@ -5,6 +5,11 @@ from jose import jwt
 from passlib.context import CryptContext
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    # avoid crashing if the environment variable is missing
+    import secrets
+
+    SECRET_KEY = secrets.token_urlsafe(32)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

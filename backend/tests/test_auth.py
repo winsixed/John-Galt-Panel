@@ -37,3 +37,9 @@ def test_login_failures(client: TestClient):
     client.post('/api/auth/register', json={'username': 'bob', 'password': 'pw'})
     wrong = client.post('/api/auth/login', json={'username': 'bob', 'password': 'bad'})
     assert wrong.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_login_validation_error(client: TestClient):
+    # missing password
+    resp = client.post('/api/auth/login', json={'username': 'bob'})
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

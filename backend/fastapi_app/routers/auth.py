@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
+import logging
 from sqlalchemy.orm import Session
 from ..rate_limiter import limiter
 from .. import models, schemas
 from ..auth import get_password_hash, verify_password, create_access_token
-from ..dependencies import get_db
+from ..dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -36,15 +37,33 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 @limiter.limit("5/minute")
 def login(
     request: Request,
-    data: schemas.UserLogin,
+    data: schemas.UserLogin = Body(...),
     db: Session = Depends(get_db),
 ):
+    logger = logging.getLogger("auth")
+    logger.info("Login attempt user=%s", data.username)
     user = db.query(models.User).filter(models.User.username == data.username).first()
-    if not user or not verify_password(data.password, user.hashed_password):
+    if not user:
+        logger.info("User not found: %s", data.username)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-    token = create_access_token({"sub": user.username, "role": user.role})
+
+    password_ok = False
+    try:
+        password_ok = verify_password(data.password, user.hashed_password)
+    except Exception as exc:
+        logger.error("Password verification failed: %s", exc)
+
+    if not password_ok:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+
+    try:
+        token = create_access_token({"sub": user.username, "role": user.role})
+    except Exception as exc:
+        logger.error("Token generation failed: %s", exc)
+        raise HTTPException(status_code=500, detail="Token generation failed")
+
+    logger.info("JWT token issued for %s", user.username)
     return {"access_token": token, "token_type": "bearer"}
-from ..dependencies import get_current_user
 
 @router.get(
     "/me",
