@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from ..rate_limiter import limiter
 from sqlalchemy.orm import Session
 from ..dependencies import get_current_user, get_db, requires_role
 from ..auth import get_password_hash
@@ -25,13 +26,30 @@ def list_users(db: Session = Depends(get_db), current_user: models.User = requir
 def admin_info(current_user: models.User = requires_role(UserRole.admin)):
     return {"message": "secret"}
 
+
+@router.get("/staff", summary="Staff area")
+def staff_area(current_user: models.User = requires_role(UserRole.staff, UserRole.admin)):
+    return {"message": "hello staff"}
+
+
+@router.get("/viewer", summary="Viewer area")
+def viewer_area(current_user: models.User = requires_role(UserRole.viewer)):
+    return {"message": "hello viewer"}
+
+
+@router.get("/inventory", summary="Inventory manager area")
+def inventory_area(current_user: models.User = requires_role(UserRole.inventory)):
+    return {"message": "inventory"}
+
 @router.post(
     "/create",
     response_model=UserPublic,
     summary="Create user",
     description="Admin creates a new user",
 )
+@limiter.limit("10/minute")
 def create_user(
+    request: Request,
     user: UserCreate,
     db: Session = Depends(get_db),
     current_user: models.User = requires_role(UserRole.admin),

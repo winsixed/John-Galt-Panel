@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import IntegrityError
 from slowapi import _rate_limit_exceeded_handler
@@ -25,6 +26,16 @@ app = FastAPI(
     title="John Galt Panel API",
     description="Backend services for John Galt Panel",
     version="0.2.0",
+)
+
+# CORS configuration
+origins = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in origins],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Rate Limiting

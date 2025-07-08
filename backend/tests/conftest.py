@@ -11,6 +11,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 from fastapi_app.database import Base
 from fastapi_app.dependencies import get_db
 from fastapi_app.main import app
+from fastapi_app.rate_limiter import limiter
 
 engine = create_engine(os.environ["DATABASE_URL"], connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -33,4 +34,5 @@ def client(db_session):
         finally:
             pass
     app.dependency_overrides[get_db] = override_get_db
-    return TestClient(app)
+    limiter.reset()
+    return TestClient(app, raise_server_exceptions=False)

@@ -8,7 +8,7 @@ import traceback
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logging.error("Validation error: %s", exc)
+    logging.error("Validation error: %s\n%s", exc, traceback.format_exc())
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": "Invalid input", "errors": str(exc.errors())},
@@ -16,6 +16,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 async def db_exception_handler(request: Request, exc: IntegrityError):
+    logging.error("Database error: %s\n%s", exc, traceback.format_exc())
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": "Database error"},
@@ -23,7 +24,7 @@ async def db_exception_handler(request: Request, exc: IntegrityError):
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
-    logging.error("HTTP error: %s", exc.detail)
+    logging.error("HTTP error: %s\n%s", exc.detail, traceback.format_exc())
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 

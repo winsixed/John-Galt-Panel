@@ -15,7 +15,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     summary="Register new account",
     description="Create a new user with staff role",
 )
-def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(
+    request: Request,
+    user_in: schemas.UserCreate,
+    db: Session = Depends(get_db),
+):
     existing = db.query(models.User).filter(models.User.username == user_in.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -57,7 +62,7 @@ def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
     try:
-        token = create_access_token({"sub": user.username, "role": user.role})
+        token = create_access_token({"sub": str(user.id), "role": user.role})
     except Exception as exc:
         logger.error("Token generation failed: %s", exc)
         raise HTTPException(status_code=500, detail="Token generation failed")

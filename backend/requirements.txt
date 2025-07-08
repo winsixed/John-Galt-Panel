@@ -8,3 +8,5 @@ httpx
 email-validator
 python-multipart
 psycopg2-binary
+slowapi
+sentry-sdk
