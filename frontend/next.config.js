@@ -1,6 +1,6 @@
-import type { NextConfig } from "next";
+const { withSentryConfig } = require("@sentry/nextjs");
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
   // CSP is configured via nginx. Remove header from Next.js to avoid conflict.
@@ -16,4 +16,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = process.env.SENTRY_DSN
+  ? withSentryConfig(nextConfig)
+  : nextConfig;

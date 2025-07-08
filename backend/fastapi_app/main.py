@@ -15,12 +15,17 @@ from .exception_handlers import (
 from .logging_config import setup_logging
 import os
 import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 setup_logging()
 
 # Optional error tracking via Sentry
 if os.getenv("SENTRY_DSN"):
-    sentry_sdk.init(dsn=os.getenv("SENTRY_DSN"))
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=1.0,
+    )
 
 app = FastAPI(
     title="John Galt Panel API",

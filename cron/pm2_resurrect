@@ -1,0 +1,1 @@
+@reboot pm2 resurrect

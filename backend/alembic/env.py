@@ -6,6 +6,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from fastapi_app.database import Base
+from fastapi_app import models  # ensure models are imported for metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

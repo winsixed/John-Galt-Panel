@@ -19,7 +19,12 @@ logs/
 .DS_Store
 *.swp
 backend/app.db
+# Ignore all environment files
 .env
+.env.*
+*.env
+!*.env.example
+!.env.example
 test.db
 
 # Patch rejects
@@ -31,3 +36,4 @@ test.db
 # Alembic/migrations
 alembic/versions/*.pyc
 
+app.db
