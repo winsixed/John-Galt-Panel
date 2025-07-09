@@ -14,8 +14,13 @@ git clone "$REPO_URL" "$NEW_RELEASE"
 cd "$NEW_RELEASE/frontend"
 npm ci
 npm run build
+# ensure the static files are present in standalone
+mkdir -p .next/standalone/.next
+cp -R .next/static .next/standalone/.next/
+cd .next/standalone
 pm2 delete john-galt-frontend || true
-pm2 start npm --name john-galt-frontend -- start
+pm2 start server.js --name john-galt-frontend
+cd "$NEW_RELEASE"
 
 ln -sfn "$NEW_RELEASE" "$CURRENT"
 
