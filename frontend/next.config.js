@@ -1,5 +1,8 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 
+// "standalone" output produces a server.js entry point. Static assets
+// will be copied into the standalone directory during deployment so
+// that Next.js can serve them correctly in production.
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
