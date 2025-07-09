@@ -1,28 +1,25 @@
 #!/bin/bash
+set -o errexit -o pipefail
 
-set -e
+BASE_DIR="/var/www/John_Galt_Panel"
+RELEASES="$BASE_DIR/releases"
+CURRENT="$BASE_DIR/current"
+TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+NEW_RELEASE="$RELEASES/$TIMESTAMP"
 
-echo "🔁 Git Pull..."
-git pull origin main || { echo "❌ Git Pull failed"; exit 1; }
+mkdir -p "$RELEASES"
+REPO_URL=${REPO_URL:-$(git config --get remote.origin.url)}
+git clone "$REPO_URL" "$NEW_RELEASE"
 
-echo "📦 Установка зависимостей (frontend)..."
-cd frontend
-npm install || { echo "❌ npm install завершился с ошибкой"; exit 1; }
-
-echo "⚙️  Сборка проекта (Next.js)..."
-npm run build || { echo "❌ Ошибка сборки"; exit 1; }
-
-echo "🚀 Перезапуск SSR через pm2..."
+cd "$NEW_RELEASE/frontend"
+npm ci
+npm run build
 pm2 delete john-galt-frontend || true
-# Start the built Next.js app using `next start` instead of standalone server.js
 pm2 start npm --name john-galt-frontend -- start
 
-cd ..
+ln -sfn "$NEW_RELEASE" "$CURRENT"
 
-echo "🔄 Перезапуск Nginx..."
-sudo systemctl reload nginx
-
-echo "🚀 Перезапуск backend (FastAPI)..."
-sudo systemctl restart web_panel
+systemctl reload nginx
+systemctl restart web_panel
 
 echo "✅ DEPLOY-FULL завершён"

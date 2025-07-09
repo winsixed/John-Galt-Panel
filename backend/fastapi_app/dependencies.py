@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from .database import SessionLocal
-from .auth import SECRET_KEY, ALGORITHM
+from .auth import SECRET_KEY, ALGORITHM, JWT_AUDIENCE, JWT_ISSUER
 from . import models
 from .models import UserRole
 
@@ -25,7 +25,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            audience=JWT_AUDIENCE,
+            issuer=JWT_ISSUER,
+        )
+        if not payload.get("scope"):
+            raise credentials_exception
         sub = payload.get("sub")
         if sub is None:
             raise credentials_exception

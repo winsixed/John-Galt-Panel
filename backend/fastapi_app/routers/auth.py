@@ -62,7 +62,7 @@ def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
     try:
-        token = create_access_token({"sub": str(user.id), "role": user.role})
+        token = create_access_token({"sub": str(user.id), "role": user.role, "scope": user.role})
     except Exception as exc:
         logger.error("Token generation failed: %s", exc)
         raise HTTPException(status_code=500, detail="Token generation failed")

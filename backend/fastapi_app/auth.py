@@ -1,15 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
-import os
 from jose import jwt
 from passlib.context import CryptContext
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    # avoid crashing if the environment variable is missing
-    import secrets
-
-    SECRET_KEY = secrets.token_urlsafe(32)
+from .config import SECRET_KEY, JWT_AUDIENCE, JWT_ISSUER
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -25,7 +19,14 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    if not data.get("scope"):
+        raise ValueError("scope claim is required")
+
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

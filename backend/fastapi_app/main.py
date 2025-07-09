@@ -13,6 +13,7 @@ from .exception_handlers import (
     server_error_handler,
 )
 from .logging_config import setup_logging
+from .config import FRONTEND_URL
 import os
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -33,11 +34,15 @@ app = FastAPI(
     version="0.2.0",
 )
 
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok"}
+
 # CORS configuration
-origins = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in origins],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

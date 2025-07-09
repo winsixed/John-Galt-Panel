@@ -4,5 +4,7 @@
     compress
     missingok
     notifempty
-    copytruncate
+    postrotate
+        pm2 reloadLogs
+    endscript
 }

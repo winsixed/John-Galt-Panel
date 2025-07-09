@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 # Set env vars before importing app
 os.environ.setdefault("SECRET_KEY", "testsecret")
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("REDIS_URL", "memory://")
+os.environ.setdefault("FRONTEND_URL", "http://testserver")
 
 from fastapi_app.database import Base
 from fastapi_app.dependencies import get_db

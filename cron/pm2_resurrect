@@ -1,1 +1,1 @@
-@reboot pm2 resurrect
+@reboot /var/www/John_Galt_Panel/scripts/pm2_resurrect_wrapper.sh

@@ -1,29 +1,29 @@
 #!/bin/bash
+set -o errexit -o pipefail
 
-set -e
+BASE_DIR="/var/www/John_Galt_Panel"
+RELEASES="$BASE_DIR/releases"
+CURRENT="$BASE_DIR/current"
 
-echo "♻️ Откат из резервной копии..."
-
-# Restore latest database dump if available
-latest_dump=$(ls -t dumps/*.dump dumps/*.sql 2>/dev/null | head -n 1 || true)
-if [ -n "$latest_dump" ]; then
-  echo "💾 Восстановление базы данных из $latest_dump"
-  if [[ "$latest_dump" == *.dump ]]; then
-    pg_restore --clean --if-exists -U "${PGUSER:-postgres}" -d "${PGDATABASE:-john_galt}" "$latest_dump"
-  else
-    psql -U "${PGUSER:-postgres}" -d "${PGDATABASE:-john_galt}" < "$latest_dump"
-  fi
-else
-  echo "⚠️  Файл дампа не найден"
+prev_release=$(ls -dt "$RELEASES"/* | sed -n '2p' || true)
+if [ -z "$prev_release" ]; then
+  echo "No previous release found" >&2
+  exit 1
 fi
 
-cd frontend
-git reset --hard HEAD~1 || true
+ln -sfn "$prev_release" "$CURRENT"
+
+latest_dump=$(ls -t dumps/*.dump.gpg 2>/dev/null | head -n 1 || true)
+if [ -n "$latest_dump" ]; then
+  echo "Restoring database from $latest_dump"
+  gpg --batch --yes --decrypt "$latest_dump" | pg_restore --clean --if-exists -U "${PGUSER:-postgres}" -d "${PGDATABASE:-john_galt}"
+fi
+
+cd "$CURRENT/frontend"
 pm2 delete john-galt-frontend || true
-# Use npm start to run the built Next.js app after rollback
 pm2 start npm --name john-galt-frontend -- start
 
-echo "🔄 Перезапуск Nginx..."
-sudo systemctl reload nginx
+systemctl reload nginx
+systemctl restart web_panel
 
 echo "✅ Откат завершён"
